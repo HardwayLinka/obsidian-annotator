@@ -388,13 +388,14 @@ export default class AnnotatorPlugin extends Plugin implements IHasAnnotatorSett
 
     private addMarkdownPostProcessor() {
         const markdownPostProcessor = async (el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+            this.log("postProcessor");
             for (const link of el.getElementsByClassName('internal-link') as HTMLCollectionOf<HTMLAnchorElement>) {
                 const parsedLink = parseLinktext(link.getAttribute("href"));
                 const annotationid = parsedLink.subpath.startsWith('#^') ? parsedLink.subpath.substring(2) : null;
                 const file: TFile | null = this.app.metadataCache.getFirstLinkpathDest(parsedLink.path, ctx.sourcePath);
 
                 if (this.isAnnotationFile(file)) {
-                    this.addClickListener(link, annotationid, file);
+                    this.addClickListener(link, annotationid, file, true);
                 }
             }
         };
@@ -402,9 +403,9 @@ export default class AnnotatorPlugin extends Plugin implements IHasAnnotatorSett
         this.registerMarkdownPostProcessor(markdownPostProcessor);
     }
 
-    addClickListener(element: HTMLAnchorElement, annotationid: string, file: TFile) {
+    addClickListener(element: HTMLAnchorElement, annotationid: string, file: TFile, isReadingView: boolean) {
         const childs = element.children;
-        if (childs && childs.length == 1) {
+        if (isReadingView || childs && childs.length == 1) {
             element.addEventListener('click', ev => {
                 this.log(annotationid);
                 ev.preventDefault();
@@ -447,7 +448,7 @@ export default class AnnotatorPlugin extends Plugin implements IHasAnnotatorSett
 
         this.tmpTargetIndex += linkInfo.count;
 
-        this.addClickListener(uniqueTarget, annotationid, file);
+        this.addClickListener(uniqueTarget, annotationid, file, false);
 
         this.tmpLinkInfos.splice(0, 1);
         if (this.tmpLinkInfos.length == 0) this.resetTmpLinkInfo();
@@ -565,7 +566,7 @@ export default class AnnotatorPlugin extends Plugin implements IHasAnnotatorSett
             const file: TFile | null = this.app.metadataCache.getFirstLinkpathDest(parsedLink.path, filePath);
 
             if (this.isAnnotationFile(file)) {
-                this.addClickListener(sourceLinks[i], annotationid, file);
+                this.addClickListener(sourceLinks[i], annotationid, file, false);
                 this.observer.observe(sourceLinks[i].parentNode, observeConfig);
             }
         }
